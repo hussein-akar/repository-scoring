@@ -3,6 +3,7 @@ package com.project.repositoryscoring.search.client.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.repositoryscoring.search.client.GithubClient;
 import com.project.repositoryscoring.search.client.config.GithubConfigurationProperties;
+import com.project.repositoryscoring.search.client.response.GithubSearchResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import okhttp3.OkHttpClient;
@@ -20,7 +21,7 @@ class GithubClientImpl implements GithubClient {
     private final GithubConfigurationProperties properties;
 
     @Override
-    public Object search(String language, String createdAt) {
+    public GithubSearchResponse search(String language, String createdAt) {
         String url = this.buildUrl(language, createdAt);
 
         Request request = this.buildRequest(url);
@@ -30,7 +31,7 @@ class GithubClientImpl implements GithubClient {
                 handleUnsuccessfulResponse(response);
             }
 
-            return objectMapper.readValue(response.body().string(), Object.class);
+            return objectMapper.readValue(response.body().string(), GithubSearchResponse.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
