@@ -13,21 +13,17 @@ comprehensive guide on how to use and contribute to the project.
   count, and the recency of updates.
 - **Swagger UI:** Access the API documentation and interact with the endpoints using Swagger UI at
   localhost:8080/swagger-ui/html.
-- **Docker Compose:** Use Docker Compose to easily set up a MariaDB instance for the project.
 
 ## Prerequisites:
 
-- MariaDB or Docker installed on your machine.
-  container.
 - Generate a token on GitHub (Settings > Developer settings > Personal access tokens)
 
 ## Setup:
 
 1. Clone the repository: git clone https://github.com/hussein-akar/repository-scoring.git
 2. Navigate to the project directory: `cd repository-scoring`
-3. Start the MariaDB or using docker container: `docker-compose up -d`
-4. export GITHUB_TOKEN=your_github_token_value
-5. Build and run the project: `mvn spring-boot:run`
+3. Export GitHub token: `export GITHUB_TOKEN=your_github_token_value`
+4. Build and run the project: `mvn spring-boot:run`
 
 ## Usage:
 
