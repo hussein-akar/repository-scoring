@@ -1,5 +1,6 @@
 package com.project.repositoryscoring.search.client.response;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
@@ -19,15 +20,19 @@ public class GithubSearchItemResponse {
     @JsonProperty("name")
     private String name;
 
-    @JsonProperty("stargazers_count")
+    @JsonAlias({"stargazers_count"})
+    @JsonProperty(value = "starsCount")
     private Integer starsCount;
 
-    @JsonProperty("forks_count")
+    @JsonAlias({"forks_count"})
+    @JsonProperty(value = "forksCount")
     private Integer forksCount;
 
-    @JsonProperty("created_at")
+    @JsonAlias({"created_at"})
+    @JsonProperty(value = "createdAt")
     protected Instant createdAt;
 
-    @JsonProperty("updated_at")
+    @JsonAlias("updated_at")
+    @JsonProperty(value = "updatedAt")
     private Instant updatedAt;
 }
