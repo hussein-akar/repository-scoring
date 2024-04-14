@@ -3,3 +3,18 @@ application:
     github:
       url: https://api.github.com/search/repositories
       token: ${GITHUB_TOKEN}
+
+spring:
+  datasource:
+    url: jdbc:mariadb://localhost:3306/repository_scoring?createDatabaseIfNotExist=true
+    username: root
+    password: root
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  jpa:
+    open-in-view: false
+    database-platform: org.hibernate.dialect.MariaDBDialect
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
