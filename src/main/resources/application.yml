@@ -1,0 +1,10 @@
+application:
+  third-party:
+    github:
+      url: https://api.github.com/search/repositories
+      token: ${EXTERNAL.VAULT.GITHUB_TOKEN}
+
+
+EXTERNAL:
+  VAULT:
+    GITHUB_TOKEN: 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
