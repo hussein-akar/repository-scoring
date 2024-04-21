@@ -1,9 +1,7 @@
 package com.project.repositoryscoring.search.client.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
-import com.project.repositoryscoring.search.client.config.GithubConfigurationProperties;
 import com.project.repositoryscoring.search.client.response.GithubSearchItemResponse;
 import com.project.repositoryscoring.search.client.response.GithubSearchResponse;
 import java.io.IOException;
@@ -17,8 +15,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
@@ -35,20 +31,20 @@ class GithubClientImplTest {
     @Spy
     WebClient webClient;
 
-    @Mock
-    GithubConfigurationProperties properties;
-
-    @InjectMocks
     private GithubClientImpl underTest;
 
     @BeforeEach
     void setUp() {
         mockWebServer = new MockWebServer();
 
-        when(properties.getUrl()).thenReturn(mockWebServer.url("/search").toString());
-        when(properties.getToken()).thenReturn("github-token");
+        webClient = WebClient.builder()
+            .baseUrl(mockWebServer.url("/search").toString())
+            .defaultHeader("Authorization", "Bearer github-token")
+            .defaultHeader("Accept", "application/vnd.github+json")
+            .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
+            .build();
 
-        underTest = new GithubClientImpl(properties);
+        underTest = new GithubClientImpl(webClient);
     }
 
     @AfterEach
