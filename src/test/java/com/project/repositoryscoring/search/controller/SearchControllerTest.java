@@ -1,9 +1,6 @@
 package com.project.repositoryscoring.search.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.project.repositoryscoring.search.client.GithubClient;
 import com.project.repositoryscoring.search.client.response.GithubSearchItemResponse;
@@ -11,53 +8,64 @@ import com.project.repositoryscoring.search.client.response.GithubSearchResponse
 import java.time.Instant;
 import java.util.List;
 import lombok.SneakyThrows;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.web.bind.MissingRequestValueException;
-import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
-@WebMvcTest(SearchController.class)
+@WebFluxTest(SearchController.class)
 class SearchControllerTest {
 
     @MockBean
     GithubClient githubClient;
 
     @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
     @Test
     @SneakyThrows
     void shouldReturnBadRequestWhenLanguageIsMissing() {
-        mockMvc.perform(MockMvcRequestBuilders
-                .get(SearchController.URL_PATH.concat("/repositories?created_at=2024-01-01")))
-            .andExpect(status().isBadRequest())
-            .andExpect(actual -> assertThat(actual.getResolvedException()).isInstanceOf(MissingRequestValueException.class));
+        webTestClient
+            .get()
+            .uri(SearchController.URL_PATH.concat("/repositories?created_at=2024-01-01"))
+            .exchange()
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(400)
+            .jsonPath("$.title").isEqualTo("Bad Request")
+            .jsonPath("$.detail").isEqualTo("400 BAD_REQUEST \"Required query parameter 'language' is not present.\"");
     }
 
     @Test
     @SneakyThrows
     void shouldReturnBadRequestWhenLanguageIsBlank() {
-        mockMvc.perform(MockMvcRequestBuilders
-                .get(SearchController.URL_PATH.concat("/repositories?language=&created_at=2024-01-01")))
-            .andExpect(status().isBadRequest())
-            .andExpect(actual -> assertThat(actual.getResolvedException()).isInstanceOf(HandlerMethodValidationException.class));
+        webTestClient
+            .get()
+            .uri(SearchController.URL_PATH.concat("/repositories?language=&created_at=2024-01-01"))
+            .exchange()
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(400)
+            .jsonPath("$.title").isEqualTo("Bad Request")
+            .jsonPath("$.detail").isEqualTo("400 BAD_REQUEST \"Validation failure\"");
     }
 
     @SneakyThrows
     @ParameterizedTest
     @ValueSource(strings = {"abc", "2024-01-01T00:00", "2024-01-01T00:00:00", "2024-01-01T00:00:00Z"})
     void shouldReturnBadRequestWhenCreatedAtFormatDoesNotMatchThePattern(String createdAt) {
-        mockMvc.perform(MockMvcRequestBuilders
-                .get(SearchController.URL_PATH.concat("/repositories?language=java&created_at=".concat(createdAt))))
-            .andExpect(status().isBadRequest())
-            .andExpect(actual -> assertThat(actual.getResolvedException()).isInstanceOf(HandlerMethodValidationException.class));
+        webTestClient
+            .get()
+            .uri(SearchController.URL_PATH.concat("/repositories?language=java&created_at=".concat(createdAt)))
+            .exchange()
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(400)
+            .jsonPath("$.title").isEqualTo("Bad Request")
+            .jsonPath("$.detail").isEqualTo("400 BAD_REQUEST \"Validation failure\"");
     }
 
     @Test
@@ -76,15 +84,18 @@ class SearchControllerTest {
 
         when(githubClient.search("java", "2024-01-01")).thenReturn(githubSearchResponse);
 
-        mockMvc.perform(MockMvcRequestBuilders
-                .get(SearchController.URL_PATH.concat("/repositories?language=java&created_at=2024-01-01")))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.items.size()", Matchers.is(1)))
-            .andExpect(jsonPath("$.items[0].id", Matchers.is(1)))
-            .andExpect(jsonPath("$.items[0].name", Matchers.is("repository-name-1")))
-            .andExpect(jsonPath("$.items[0].starsCount", Matchers.is(10)))
-            .andExpect(jsonPath("$.items[0].forksCount", Matchers.is(5)))
-            .andExpect(jsonPath("$.items[0].createdAt", Matchers.is("2020-01-01T00:00:00Z")))
-            .andExpect(jsonPath("$.items[0].updatedAt", Matchers.is("2020-01-01T00:00:00Z")));
+        webTestClient
+            .get()
+            .uri(SearchController.URL_PATH.concat("/repositories?language=java&created_at=2024-01-01"))
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.items.size()").isEqualTo(1)
+            .jsonPath("$.items[0].id").isEqualTo(1)
+            .jsonPath("$.items[0].name").isEqualTo("repository-name-1")
+            .jsonPath("$.items[0].starsCount").isEqualTo(10)
+            .jsonPath("$.items[0].forksCount").isEqualTo(5)
+            .jsonPath("$.items[0].createdAt").isEqualTo("2020-01-01T00:00:00Z")
+            .jsonPath("$.items[0].updatedAt").isEqualTo("2020-01-01T00:00:00Z");
     }
 }
