@@ -27,7 +27,7 @@ comprehensive guide on how to use and contribute to the project.
 
 ## Usage:
 
-1. Access the Swagger UI at localhost:8080/swagger-ui/html.
+1. Access the Swagger UI at http://localhost:8080/webjars/swagger-ui/index.html
 2. Use the `/api/{version}/search/repositories` endpoint to search GitHub repositories.
 3. Specify the language as a mandatory parameter and optionally the creation date.
 4. Explore the results, which are sorted by stars count in descending order.
