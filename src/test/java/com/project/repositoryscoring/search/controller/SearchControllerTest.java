@@ -1,5 +1,6 @@
 package com.project.repositoryscoring.search.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -19,6 +20,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.web.bind.MissingRequestValueException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @WebMvcTest(SearchController.class)
 class SearchControllerTest {
@@ -34,7 +37,8 @@ class SearchControllerTest {
     void shouldReturnBadRequestWhenLanguageIsMissing() {
         mockMvc.perform(MockMvcRequestBuilders
                 .get(SearchController.URL_PATH.concat("/repositories?created_at=2024-01-01")))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isBadRequest())
+            .andExpect(actual -> assertThat(actual.getResolvedException()).isInstanceOf(MissingRequestValueException.class));
     }
 
     @Test
@@ -42,7 +46,8 @@ class SearchControllerTest {
     void shouldReturnBadRequestWhenLanguageIsBlank() {
         mockMvc.perform(MockMvcRequestBuilders
                 .get(SearchController.URL_PATH.concat("/repositories?language=&created_at=2024-01-01")))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isBadRequest())
+            .andExpect(actual -> assertThat(actual.getResolvedException()).isInstanceOf(HandlerMethodValidationException.class));
     }
 
     @SneakyThrows
@@ -51,7 +56,8 @@ class SearchControllerTest {
     void shouldReturnBadRequestWhenCreatedAtFormatDoesNotMatchThePattern(String createdAt) {
         mockMvc.perform(MockMvcRequestBuilders
                 .get(SearchController.URL_PATH.concat("/repositories?language=java&created_at=".concat(createdAt))))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isBadRequest())
+            .andExpect(actual -> assertThat(actual.getResolvedException()).isInstanceOf(HandlerMethodValidationException.class));
     }
 
     @Test
