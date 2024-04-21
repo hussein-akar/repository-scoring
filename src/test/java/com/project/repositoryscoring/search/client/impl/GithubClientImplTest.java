@@ -1,11 +1,8 @@
 package com.project.repositoryscoring.search.client.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.repositoryscoring.config.JacksonConfiguration;
 import com.project.repositoryscoring.search.client.config.GithubConfigurationProperties;
 import com.project.repositoryscoring.search.client.response.GithubSearchItemResponse;
 import com.project.repositoryscoring.search.client.response.GithubSearchResponse;
@@ -13,7 +10,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import lombok.SneakyThrows;
-import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -27,6 +23,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @ExtendWith(MockitoExtension.class)
 class GithubClientImplTest {
@@ -36,10 +33,7 @@ class GithubClientImplTest {
     private MockWebServer mockWebServer;
 
     @Spy
-    OkHttpClient httpClient;
-
-    @Spy
-    ObjectMapper objectMapper = new JacksonConfiguration().objectMapper();
+    WebClient webClient;
 
     @Mock
     GithubConfigurationProperties properties;
@@ -53,6 +47,8 @@ class GithubClientImplTest {
 
         when(properties.getUrl()).thenReturn(mockWebServer.url("/search").toString());
         when(properties.getToken()).thenReturn("github-token");
+
+        underTest = new GithubClientImpl(properties);
     }
 
     @AfterEach
@@ -64,9 +60,10 @@ class GithubClientImplTest {
     void shouldThrowExceptionWhenCallIsNotSuccessful() {
         mockWebServer.enqueue(new MockResponse().setResponseCode(400));
 
-        Throwable throwable = catchThrowable(() -> underTest.search(LANGUAGE, null));
-
-        assertThat(throwable).isNotNull();
+        underTest.search(LANGUAGE, null).subscribe(
+            response -> assertThat(response).isNull(),
+            error -> assertThat(error).isNotNull()
+        );
     }
 
     @Test
@@ -82,7 +79,7 @@ class GithubClientImplTest {
                 """
             ));
 
-        underTest.search(LANGUAGE, null);
+        underTest.search(LANGUAGE, null).subscribe();
 
         RecordedRequest actual = mockWebServer.takeRequest();
 
@@ -106,7 +103,7 @@ class GithubClientImplTest {
             ));
 
         String createdAt = "2020-01-01";
-        underTest.search(LANGUAGE, createdAt);
+        underTest.search(LANGUAGE, createdAt).subscribe();
 
         RecordedRequest actual = mockWebServer.takeRequest();
 
@@ -129,7 +126,7 @@ class GithubClientImplTest {
                 """
             ));
 
-        underTest.search(LANGUAGE, null);
+        underTest.search(LANGUAGE, null).subscribe();
 
         RecordedRequest actual = mockWebServer.takeRequest();
 
@@ -178,27 +175,28 @@ class GithubClientImplTest {
                     """)
         );
 
-        GithubSearchResponse actual = underTest.search(LANGUAGE, null);
-
-        assertThat(actual.getItems()).usingRecursiveComparison().isEqualTo(
-            List.of(
-                new GithubSearchItemResponse(
-                    1,
-                    "repository-name-1",
-                    10,
-                    5,
-                    Instant.parse("2020-01-01T00:00:00Z"),
-                    Instant.parse("2020-01-01T00:00:00Z")
-                ),
-                new GithubSearchItemResponse(
-                    2,
-                    "repository-name-2",
-                    0,
-                    3,
-                    Instant.parse("2023-09-01T00:00:00Z"),
-                    Instant.parse("2020-10-01T00:00:00Z")
+        underTest.search(LANGUAGE, null)
+            .subscribe(result -> assertThat(result).usingRecursiveComparison().isEqualTo(
+                new GithubSearchResponse(
+                    List.of(
+                        new GithubSearchItemResponse(
+                            1,
+                            "repository-name-1",
+                            10,
+                            5,
+                            Instant.parse("2020-01-01T00:00:00Z"),
+                            Instant.parse("2020-01-01T00:00:00Z")
+                        ),
+                        new GithubSearchItemResponse(
+                            2,
+                            "repository-name-2",
+                            0,
+                            3,
+                            Instant.parse("2023-09-01T00:00:00Z"),
+                            Instant.parse("2020-10-01T00:00:00Z")
+                        )
+                    )
                 )
-            )
-        );
+            ));
     }
 }

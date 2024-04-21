@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
 @WebFluxTest(SearchController.class)
 class SearchControllerTest {
@@ -82,7 +83,7 @@ class SearchControllerTest {
             )
         ));
 
-        when(githubClient.search("java", "2024-01-01")).thenReturn(githubSearchResponse);
+        when(githubClient.search("java", "2024-01-01")).thenReturn(Mono.just(githubSearchResponse));
 
         webTestClient
             .get()

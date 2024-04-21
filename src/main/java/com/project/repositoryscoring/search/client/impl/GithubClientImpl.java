@@ -1,66 +1,48 @@
 package com.project.repositoryscoring.search.client.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.repositoryscoring.search.client.GithubClient;
 import com.project.repositoryscoring.search.client.config.GithubConfigurationProperties;
 import com.project.repositoryscoring.search.client.response.GithubSearchResponse;
-import java.io.IOException;
-import lombok.RequiredArgsConstructor;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 @Component
-@RequiredArgsConstructor
 class GithubClientImpl implements GithubClient {
 
-    private final OkHttpClient httpClient;
-    private final ObjectMapper objectMapper;
+    private final WebClient webClient;
 
-    private final GithubConfigurationProperties properties;
-
-    @Override
-    public GithubSearchResponse search(String language, String createdAt) {
-        String url = this.buildUrl(language, createdAt);
-
-        Request request = this.buildRequest(url);
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful() || response.body() == null) {
-                handleUnsuccessfulResponse(response);
-            }
-
-            return objectMapper.readValue(response.body().string(), GithubSearchResponse.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public GithubClientImpl(GithubConfigurationProperties properties) {
+        this.webClient = WebClient.builder()
+            .baseUrl(properties.getUrl())
+            .defaultHeader("Authorization", "Bearer " + properties.getToken())
+            .defaultHeader("Accept", "application/vnd.github+json")
+            .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
+            .build();
     }
 
-    private String buildUrl(String language, String createdAt) {
-        StringBuilder urlBuilder = new StringBuilder(properties.getUrl())
-            .append("?q=language:")
-            .append(language);
+    @Override
+    public Mono<GithubSearchResponse> search(String language, String createdAt) {
+        String query = this.buildQuery(language, createdAt);
+
+        return webClient.get()
+            .uri(uriBuilder -> uriBuilder
+                .queryParam("q", query)
+                .queryParam("sort", "stars")
+                .queryParam("order", "desc")
+                .build())
+            .retrieve()
+            .bodyToMono(GithubSearchResponse.class);
+    }
+
+    private String buildQuery(String language, String createdAt) {
+        StringBuilder urlBuilder = new StringBuilder()
+            .append("language:").append(language);
 
         if (createdAt != null) {
             urlBuilder.append("+created:").append(createdAt);
         }
 
-        urlBuilder.append("&sort=stars&order=desc");
         return urlBuilder.toString();
-    }
-
-    private Request buildRequest(String url) {
-        return new Request.Builder()
-            .get()
-            .url(url)
-            .addHeader("X-GitHub-Api-Version", "2022-11-28")
-            .addHeader("Accept", "application/vnd.github+json")
-            .addHeader("Authorization", "Bearer " + properties.getToken())
-            .build();
-    }
-
-    private void handleUnsuccessfulResponse(Response response) throws IOException {
-        throw new IOException("Failed to fetch repositories. HTTP error code: " + response.code());
     }
 }
